@@ -1,5 +1,7 @@
 # ZipMaster
 
+[![CI](https://github.com/Fi2zz/zipmaster/actions/workflows/ci.yml/badge.svg)](https://github.com/Fi2zz/zipmaster/actions/workflows/ci.yml)
+
 原生 **Apple Silicon（arm64）** 的 macOS 压缩/解压应用，作为仅支持 Intel 的「360压缩大师」的替代。
 界面用 SwiftUI 从零重写；压缩/解压核心换成开源引擎 **7-Zip（`7zz`）** 与 **unrar**，在目标机器上原生编译为 arm64。
 
