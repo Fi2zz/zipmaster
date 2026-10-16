@@ -18,4 +18,11 @@ enum TestEngines {
         let candidate = dir.appendingPathComponent(name)
         return FileManager.default.isExecutableFile(atPath: candidate.path) ? candidate : nil
     }
+
+    /// 测试 fixtures 目录（Tests/ZipMasterTests/Fixtures）。
+    static var fixturesDir: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures", isDirectory: true)
+    }
 }

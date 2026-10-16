@@ -3,6 +3,7 @@ import Foundation
 enum ArchiveError: Error, Equatable {
     case engineNotFound(String)
     case processFailed(exitCode: Int32, message: String)
+    case unsupported(String)
     case cancelled
 }
 
@@ -13,6 +14,8 @@ extension ArchiveError: LocalizedError {
             return "找不到引擎 \(name)，请先运行 scripts/build-engines.sh"
         case .processFailed(let code, let message):
             return "引擎执行失败（退出码 \(code)）：\(message)"
+        case .unsupported(let message):
+            return "不支持的操作：\(message)"
         case .cancelled:
             return "操作已取消"
         }
