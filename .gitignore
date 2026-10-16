@@ -4,3 +4,4 @@ Sources/ZipMaster/Resources/Engines/*
 !Sources/ZipMaster/Resources/Engines/.gitkeep
 .build/
 .DS_Store
+.superpowers/
