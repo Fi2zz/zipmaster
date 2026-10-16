@@ -19,6 +19,14 @@ final class SevenZipEngine: ArchiveEngine {
         }
     }
 
+    func extract(archive: URL, to destination: URL,
+                 onProgress: @escaping (Double) -> Void) async throws {
+        let args = ["x", "-bsp1", "-y", "-aoa", "-o\(destination.path)", archive.path]
+        try await runner.run(executable: sevenZip, arguments: args) { line in
+            if let value = ProgressParser.parseSevenZip(line) { onProgress(value) }
+        }
+    }
+
     func cancel() {
         runner.cancel()
     }

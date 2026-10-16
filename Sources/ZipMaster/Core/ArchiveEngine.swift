@@ -6,6 +6,10 @@ protocol ArchiveEngine: AnyObject {
     func create(archive: URL, from sources: [URL], format: ArchiveFormat,
                 onProgress: @escaping (Double) -> Void) async throws
 
+    /// 把 `archive` 全部解压到 `destination`。
+    func extract(archive: URL, to destination: URL,
+                 onProgress: @escaping (Double) -> Void) async throws
+
     /// 终止正在进行的操作。
     func cancel()
 }

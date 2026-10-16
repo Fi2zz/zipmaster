@@ -38,6 +38,41 @@ final class SevenZipEngineTests: XCTestCase {
         XCTAssertFalse(progresses.isEmpty, "应至少回调一次进度")
     }
 
+    func testExtractRestoresUnicodeFileName() async throws {
+        let sevenZip = try engineURL()
+        let engine = SevenZipEngine(sevenZip: sevenZip)
+        let tmp = try makeTempDir()
+        let input = tmp.appendingPathComponent("含 空格.txt")
+        try Data("hello 世界".utf8).write(to: input)
+        let archive = tmp.appendingPathComponent("out.zip")
+        try await engine.create(archive: archive, from: [input], format: .zip, onProgress: { _ in })
+
+        let out = tmp.appendingPathComponent("extracted")
+        try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        try await engine.extract(archive: archive, to: out, onProgress: { _ in })
+
+        let restored = out.appendingPathComponent("含 空格.txt")
+        XCTAssertEqual(try String(contentsOf: restored, encoding: .utf8), "hello 世界")
+    }
+
+    func testExtractOverwritesExistingWithoutError() async throws {
+        let sevenZip = try engineURL()
+        let engine = SevenZipEngine(sevenZip: sevenZip)
+        let tmp = try makeTempDir()
+        let input = tmp.appendingPathComponent("a.txt")
+        try Data("v1".utf8).write(to: input)
+        let archive = tmp.appendingPathComponent("out.zip")
+        try await engine.create(archive: archive, from: [input], format: .zip, onProgress: { _ in })
+
+        let out = tmp.appendingPathComponent("extracted")
+        try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        try await engine.extract(archive: archive, to: out, onProgress: { _ in })
+        // 第二次解压到同一目录应覆盖、不抛错
+        try await engine.extract(archive: archive, to: out, onProgress: { _ in })
+
+        XCTAssertEqual(try String(contentsOf: out.appendingPathComponent("a.txt"), encoding: .utf8), "v1")
+    }
+
     // MARK: - helpers
 
     private func list(_ sevenZip: URL, _ archive: URL) async throws -> String {
