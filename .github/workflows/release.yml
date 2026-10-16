@@ -1,0 +1,42 @@
+name: Release
+
+# 仅显式发版时触发：推送形如 v0.1.0 的 tag。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14   # arm64（Apple Silicon）
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache arm64 engines
+        uses: actions/cache@v4
+        with:
+          path: Sources/ZipMaster/Resources/Engines
+          key: engines-${{ runner.os }}-${{ hashFiles('scripts/build-engines.sh') }}
+
+      - name: Build engines (7zz + unrar, arm64)
+        run: ./scripts/build-engines.sh
+
+      - name: Test
+        run: swift test
+
+      - name: Build ZipMaster.app
+        run: ./scripts/build-app.sh
+
+      - name: Package app
+        run: ditto -c -k --keepParent ZipMaster.app ZipMaster.zip
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" ZipMaster.zip \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

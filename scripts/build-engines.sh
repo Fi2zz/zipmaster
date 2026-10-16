@@ -7,7 +7,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$ROOT/Sources/ZipMaster/Resources/Engines"
 mkdir -p "$OUT"
 
+# 固定版本以保证可复现构建（7-Zip 26.04 / unrar 7.3.1）。
 SEVENZIP_REPO="https://github.com/ip7z/7zip"
+SEVENZIP_TAG="26.04"
 UNRAR_URL="https://www.rarlab.com/rar/unrarsrc-7.3.1.tar.gz"
 
 WORK="$(mktemp -d)"
@@ -19,8 +21,8 @@ NCPU="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 if [ -x "$OUT/7zz" ]; then
     echo "==> 7zz 已存在，跳过"
 else
-    echo "==> 克隆并构建 7zz"
-    git clone --depth 1 "$SEVENZIP_REPO" "$WORK/7zip"
+    echo "==> 克隆并构建 7zz (tag $SEVENZIP_TAG)"
+    git clone --depth 1 --branch "$SEVENZIP_TAG" "$SEVENZIP_REPO" "$WORK/7zip"
     BUNDLE="$WORK/7zip/CPP/7zip/Bundles/Alone2"
     make -C "$BUNDLE" -f makefile.gcc -j"$NCPU"
     BIN7="$(find "$BUNDLE" -type f -name 7zz -perm -111 | head -1)"
