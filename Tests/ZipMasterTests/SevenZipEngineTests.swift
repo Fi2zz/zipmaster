@@ -28,14 +28,25 @@ final class SevenZipEngineTests: XCTestCase {
         let sevenZip = try engineURL()
         let engine = SevenZipEngine(sevenZip: sevenZip)
         let tmp = try makeTempDir()
-        let input = tmp.appendingPathComponent("a.txt")
-        try Data(String(repeating: "x", count: 100_000).utf8).write(to: input)
+        var sources: [URL] = []
+        // 不可压缩数据、足够大，确保 7zz 至少上报一次中间进度。
+        for index in 1...3 {
+            let file = tmp.appendingPathComponent("f\(index).bin")
+            try randomData(3 * 1024 * 1024).write(to: file)
+            sources.append(file)
+        }
         let archive = tmp.appendingPathComponent("out.7z")
 
         var progresses: [Double] = []
-        try await engine.create(archive: archive, from: [input], format: .sevenZip, onProgress: { progresses.append($0) })
+        try await engine.create(archive: archive, from: sources, format: .sevenZip, onProgress: { progresses.append($0) })
 
-        XCTAssertFalse(progresses.isEmpty, "应至少回调一次进度")
+        XCTAssertGreaterThan(progresses.max() ?? 0, 0, "进度应推进，实际: \(progresses)")
+    }
+
+    private func randomData(_ bytes: Int) throws -> Data {
+        let handle = try FileHandle(forReadingFrom: URL(fileURLWithPath: "/dev/urandom"))
+        defer { try? handle.close() }
+        return handle.readData(ofLength: bytes)
     }
 
     func testExtractRestoresUnicodeFileName() async throws {
@@ -71,6 +82,24 @@ final class SevenZipEngineTests: XCTestCase {
         try await engine.extract(archive: archive, to: out, onProgress: { _ in })
 
         XCTAssertEqual(try String(contentsOf: out.appendingPathComponent("a.txt"), encoding: .utf8), "v1")
+    }
+
+    func testCreateReplacesExistingArchive() async throws {
+        let sevenZip = try engineURL()
+        let engine = SevenZipEngine(sevenZip: sevenZip)
+        let tmp = try makeTempDir()
+        let a = tmp.appendingPathComponent("a.txt")
+        try Data("a".utf8).write(to: a)
+        let b = tmp.appendingPathComponent("b.txt")
+        try Data("b".utf8).write(to: b)
+        let archive = tmp.appendingPathComponent("out.zip")
+
+        try await engine.create(archive: archive, from: [a], format: .zip, onProgress: { _ in })
+        try await engine.create(archive: archive, from: [b], format: .zip, onProgress: { _ in })
+
+        let listing = try await list(sevenZip, archive)
+        XCTAssertTrue(listing.contains("b.txt"), "listing: \(listing)")
+        XCTAssertFalse(listing.contains("a.txt"), "陈旧条目未清除: \(listing)")
     }
 
     // MARK: - helpers

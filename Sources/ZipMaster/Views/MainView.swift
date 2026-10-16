@@ -57,6 +57,8 @@ struct MainView: View {
         }
     }
 
+    private var isRunning: Bool { model.job?.state == .running }
+
     private var errorBinding: Binding<Bool> {
         Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
     }
@@ -84,7 +86,7 @@ struct MainView: View {
                 guard !sources.isEmpty, !outputPath.isEmpty else { return }
                 model.create(archive: URL(fileURLWithPath: outputPath), from: sources, format: format)
             }
-            .disabled(sources.isEmpty || outputPath.isEmpty)
+            .disabled(sources.isEmpty || outputPath.isEmpty || isRunning)
 
             dropZone(title: "或把文件/文件夹拖到这里压缩") { urls in
                 sources = urls
@@ -112,7 +114,7 @@ struct MainView: View {
                 guard let archive, !extractPath.isEmpty else { return }
                 model.extract(archive: archive, to: URL(fileURLWithPath: extractPath))
             }
-            .disabled(archive == nil || extractPath.isEmpty)
+            .disabled(archive == nil || extractPath.isEmpty || isRunning)
 
             dropZone(title: "或把压缩包拖到这里解压") { urls in
                 if let first = urls.first {

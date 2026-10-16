@@ -27,6 +27,7 @@ final class AppModel: ObservableObject {
             engine = sevenZip.map { SevenZipEngine(sevenZip: $0) }
         }
         guard let engine else { reportMissingEngine(); return }
+        job?.cancel()
         let job = ArchiveJob(engine: engine)
         self.job = job
         job.startExtract(archive: archive, to: destination)
@@ -35,6 +36,11 @@ final class AppModel: ObservableObject {
     /// 压缩：始终使用 7zz（unrar 不能创建压缩包）。
     func create(archive: URL, from sources: [URL], format: ArchiveFormat) {
         guard let sevenZip else { reportMissingEngine(); return }
+        guard Self.isValidSources(sources, for: format) else {
+            errorMessage = "\(format.fileExtension) 只能压缩单个文件（不能是文件夹或多个文件）"
+            return
+        }
+        job?.cancel()
         let job = ArchiveJob(engine: SevenZipEngine(sevenZip: sevenZip))
         self.job = job
         job.startCreate(archive: archive, from: sources, format: format)
@@ -42,6 +48,16 @@ final class AppModel: ObservableObject {
 
     func cancel() {
         job?.cancel()
+    }
+
+    /// gz/bz2/xz 是单文件格式：仅接受“恰好一个普通文件”。
+    private static func isValidSources(_ sources: [URL], for format: ArchiveFormat) -> Bool {
+        let singleFileFormats: Set<ArchiveFormat> = [.gzip, .bzip2, .xz]
+        guard singleFileFormats.contains(format) else { return true }
+        guard sources.count == 1, let first = sources.first else { return false }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory) else { return false }
+        return !isDirectory.boolValue
     }
 
     private func reportMissingEngine() {

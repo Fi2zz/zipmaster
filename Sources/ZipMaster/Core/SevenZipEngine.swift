@@ -12,6 +12,8 @@ final class SevenZipEngine: ArchiveEngine {
 
     func create(archive: URL, from sources: [URL], format: ArchiveFormat,
                 onProgress: @escaping (Double) -> Void) async throws {
+        // 覆盖语义：先删除已存在的目标，避免 7zz 的“更新”行为在重复压缩时残留陈旧条目。
+        try? FileManager.default.removeItem(at: archive)
         var args = ["a", format.sevenZipFlag, "-bsp1", "-y", archive.path]
         args += sources.map(\.path)
         try await runner.run(executable: sevenZip, arguments: args) { line in

@@ -28,4 +28,8 @@ final class ProgressParserTests: XCTestCase {
     func testClampsOutOfRange() {
         XCTAssertNil(ProgressParser.parseSevenZip("999% x"))
     }
+
+    func testParsesLastPercentageInLine() {
+        XCTAssertEqual(ProgressParser.parseSevenZip("  0% then 80%"), 0.8)
+    }
 }
