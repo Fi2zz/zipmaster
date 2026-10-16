@@ -7,12 +7,14 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "ZipMaster",
-            path: "Sources/ZipMaster"
+            path: "Sources/ZipMaster",
+            exclude: ["Resources"]
         ),
         .testTarget(
             name: "ZipMasterTests",
             dependencies: ["ZipMaster"],
-            path: "Tests/ZipMasterTests"
+            path: "Tests/ZipMasterTests",
+            resources: [.copy("Fixtures")]
         ),
     ]
 )

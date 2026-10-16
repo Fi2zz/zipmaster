@@ -27,7 +27,8 @@ final class ProcessRunner: ProcessRunning {
             if !data.isEmpty { liner.append(data) }
         }
 
-        lock.lock(); self.process = process; lock.unlock()
+        setProcess(process)
+        defer { clearProcess() }
 
         let status: Int32 = try await withCheckedThrowingContinuation { cont in
             process.terminationHandler = { proc in
@@ -44,8 +45,6 @@ final class ProcessRunner: ProcessRunning {
             }
         }
 
-        lock.lock(); self.process = nil; lock.unlock()
-
         if status != 0 {
             let errData = stderr.fileHandleForReading.readDataToEndOfFile()
             let errText = (String(data: errData, encoding: .utf8) ?? "")
@@ -59,6 +58,19 @@ final class ProcessRunner: ProcessRunning {
         let p = process
         lock.unlock()
         p?.terminate()
+    }
+
+    /// 非 async 作用域内操作锁，避免在异步上下文中直接调用 NSLock。
+    private func setProcess(_ process: Process) {
+        lock.lock()
+        self.process = process
+        lock.unlock()
+    }
+
+    private func clearProcess() {
+        lock.lock()
+        process = nil
+        lock.unlock()
     }
 }
 
